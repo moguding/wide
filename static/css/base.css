@@ -36,6 +36,44 @@ ul {
 .fn-none {
     display: none;
 }
+
+@font-face {
+    font-family: 'icomoon';
+    src:url('fonts/icomoon.eot?35cb2z');
+    src:url('fonts/icomoon.eot?#iefix35cb2z') format('embedded-opentype'),
+        url('fonts/icomoon.woff?35cb2z') format('woff'),
+        url('fonts/icomoon.ttf?35cb2z') format('truetype'),
+        url('fonts/icomoon.svg?35cb2z#icomoon') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.font-ico {
+    font-family: 'icomoon';
+    /* Better Font Rendering =========== */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.ico-play:before {
+    content: "\e605";
+}
+
+.ico-save:before {
+    content: "\f0c7";
+}
+
+.ico-fullscreen:before {
+    content: "\e601";
+}
+
+.ico-format:before {
+    content: "\e60b";
+}
+
+.icon-buildrun:before {
+    content: "\e607";
+}
 /* end reset & function */
 
 /* start frame */
@@ -43,7 +81,7 @@ ul {
     position: absolute;
     border: 1px solid #5F5F5F;
     background-color: #F8F8F8;
-    width: 340px;
+    width: 320px;
     z-index: 5;
     display: none;
 }
@@ -58,6 +96,22 @@ ul {
     background-color: #3875D7;
     color: #FFF;
 }
+
+.frame a {
+    color: #000;
+    text-decoration: none;
+}
+
+.frame li:hover a,
+.frame a:hover {
+    color: #FFF;
+}
+
+.frame .hr {
+    background-color: #bdbdbd;
+    height: 1px;
+    margin: 0 1px;
+}
 /* end frame */
 
 /* start tabs */
@@ -68,11 +122,12 @@ ul {
 }
 
 .tabs > div {
-    background-color: #D1D1D1;
-    float: left;
-    border-right: 1px solid #9B9B9B;
-    padding: 2px 5px;
+    background-color: #d1d1d1;
+    border-right: 1px solid #9b9b9b;
     color: #333;
+    float: left;
+    line-height: 19px;
+    padding: 0 5px
 }
 
 .tabs > div.current {
@@ -80,7 +135,17 @@ ul {
 }
 
 .tabs .ico-close {
+    color: #666;
+}
+
+.tabs .ico-close:hover {
+    color: #333;
+}
+
+.tabs .ico-close:before {
+    content: "\e60a";
     cursor: pointer;
+
 }
 /* end tabs */
 
@@ -134,12 +199,32 @@ ul {
     padding: 5px;
     text-decoration: none;
 }
+
+.toolbars > span {
+    color: #666;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 25px;
+    margin-right: 5px;
+}
+
+.toolbars > span:hover {
+    color: #333;
+}
 /* end menu */
 
 /* start editor */
 .edit-panel {
     background-color: #D7D7D7;
     width: 100%
+}
+
+.edit-header .ico {
+    background-image: url("../images/ico-file.png");
+    float: left;
+    height: 16px;
+    margin: 2px 0 0 -2px;
+    width: 16px;
 }
 
 .CodeMirror-focused .cm-matchhighlight {

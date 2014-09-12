@@ -33,6 +33,9 @@ A simple <b>W</b>eb **IDE** for golang.
 * Web development: Frontend devlopment (HTML/JS/CSS) all in one
 * Go tool: go get/install/fmt etc.
 
+## Documents
+* [中文文档](http://b3log.github.io/wide/doc/zh_CN/index.html)
+
 ## Demos
 
 * 20140910, png ![](http://b3log.org/wide/demo/20140910.png)
@@ -57,5 +60,6 @@ Licensed under the [Apache License 2.0](https://github.com/b3log/wide/blob/maste
 * [golang](http://golang.org)
 * [CodeMirror](https://github.com/marijnh/CodeMirror)
 * [zTree](https://github.com/zTree/zTree_v3) 
+* [LiteIDE](https://github.com/visualfc/liteide)
 * [gocode](https://github.com/nsf/gocode)
 * [Gorilla](https://github.com/gorilla)

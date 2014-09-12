@@ -125,6 +125,53 @@ var editors = {
 
         CodeMirror.commands.doNothing = function(cm) {
         };
+
+        CodeMirror.commands.jumpToDecl = function(cm) {
+            var cur = wide.curEditor.getCursor();
+
+            var request = {
+                file: wide.curNode.path,
+                code: wide.curEditor.getValue(),
+                cursorLine: cur.line,
+                cursorCh: cur.ch
+            };
+
+            $.ajax({
+                type: 'POST',
+                url: '/finddecl',
+                data: JSON.stringify(request),
+                dataType: "json",
+                success: function(data) {
+                    if (!data.succ) {
+                        return;
+                    }
+
+                    var request = {
+                        path: data.path
+                    };
+
+                    $.ajax({
+                        type: 'POST',
+                        url: '/file',
+                        data: JSON.stringify(request),
+                        dataType: "json",
+                        success: function(data) {
+                            if (!data.succ) {
+                                alert(data.msg);
+
+                                return false;
+                            }
+
+                            // FIXME: V, 这个可能不在文件树里，但是也需要打开一个编辑器
+                            // 打开一个新编辑器并定位到跳转的行列
+                            var line = data.cursorLine;
+                            var ch = data.cursorCh;
+                            editors.newEditor(data);
+                        }
+                    });
+                }
+            });
+        };
     },
     newEditor: function(data) {
         $(".ico-fullscreen").show();
@@ -139,7 +186,8 @@ var editors = {
 
         editors.tabs.add({
             id: id,
-            title: '<span title="' + wide.curNode.path + '">' + wide.curNode.name + '</span>',
+            title: '<span title="' + wide.curNode.path + '"><span class="' 
+                    + wide.curNode.iconSkin + 'ico"></span>' + wide.curNode.name + '</span>',
             content: '<textarea id="editor' + id + '"></textarea>'
         });
 
@@ -169,7 +217,8 @@ var editors = {
                 },
                 "Ctrl-G": "gotoLine",
                 "Ctrl-E": "deleteLine",
-                "Ctrl-D": "doNothing" // 取消默认的 deleteLine
+                "Ctrl-D": "doNothing", // 取消默认的 deleteLine
+                "Ctrl-B": "jumpToDecl"
             }
         });
 
