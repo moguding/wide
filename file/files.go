@@ -1,3 +1,4 @@
+// 文件树操作.
 package file
 
 import (
@@ -57,6 +58,7 @@ func GetFiles(w http.ResponseWriter, r *http.Request) {
 	data["root"] = root
 }
 
+// 编辑器打开一个文件.
 func GetFile(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"succ": true}
 	defer util.RetJSON(w, r, data)
@@ -106,6 +108,7 @@ func GetFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 保存文件.
 func SaveFile(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"succ": true}
 	defer util.RetJSON(w, r, data)
@@ -144,6 +147,7 @@ func SaveFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 新建文件/目录.
 func NewFile(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"succ": true}
 	defer util.RetJSON(w, r, data)
@@ -167,6 +171,7 @@ func NewFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 删除文件/目录.
 func RemoveFile(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"succ": true}
 	defer util.RetJSON(w, r, data)
@@ -189,16 +194,17 @@ func RemoveFile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 文件节点，用于构造文件树.
 type FileNode struct {
 	Name      string      `json:"name"`
 	Path      string      `json:"path"`
 	IconSkin  string      `json:"iconSkin"` // 值的末尾应该有一个空格
-	Type      string      `json:"type"`
+	Type      string      `json:"type"`     // "f"：文件，"d"：文件夹
 	Mode      string      `json:"mode"`
 	FileNodes []*FileNode `json:"children"`
 }
 
-// 遍历指定的 path，构造文件树.
+// 遍历指定的路径，构造文件树.
 func walk(path string, node *FileNode) {
 	files := listFiles(path)
 
@@ -264,20 +270,16 @@ func listFiles(dirname string) []string {
 }
 
 func getIconSkin(filenameExtension string) string {
-	if "" == filenameExtension || ".exe" == filenameExtension {
-		return "ico-ztree-other "
-	}
-
 	switch filenameExtension {
-	case ".gitignore":
+	case ".gitignore", "", ".exe", ".s":
 		return "ico-ztree-other "
-	case ".json":
+	case ".json", ".js":
 		return "ico-ztree-js "
 	case ".txt":
 		return "ico-ztree-text "
 	case ".properties":
 		return "ico-ztree-pro "
-	case ".htm":
+	case ".htm", ".html":
 		return "ico-ztree-html "
 	default:
 		if isImg(filenameExtension) {
