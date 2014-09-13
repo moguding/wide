@@ -23,6 +23,8 @@ func init() {
 	flag.Set("logtostderr", "true")
 	flag.Set("v", "1")
 
+	conf.Load()
+
 	flag.Parse()
 }
 
@@ -61,8 +63,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	conf.Load()
-
 	runtime.GOMAXPROCS(conf.Wide.MaxProcs)
 
 	defer glog.Flush()
