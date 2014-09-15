@@ -62,11 +62,13 @@ func WSHandler(w http.ResponseWriter, r *http.Request) {
 
 		// glog.Infof("offset: %d", offset)
 
+		gocode := os.Getenv("GOPATH") + string(os.PathSeparator) + "bin" + string(os.PathSeparator) +
+			os.Getenv("GOOS") + "_" + os.Getenv("GOARCH") + string(os.PathSeparator) + "gocode"
 		argv := []string{"-f=json", "autocomplete", strconv.Itoa(offset)}
 
 		var output bytes.Buffer
 
-		cmd := exec.Command("gocode", argv...)
+		cmd := exec.Command(gocode, argv...)
 		cmd.Stdout = &output
 
 		stdin, _ := cmd.StdinPipe()
@@ -101,6 +103,8 @@ func AutocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	username := session.Values["username"].(string)
 
 	code := args["code"].(string)
+	// TODO: 保存文件
+
 	line := int(args["cursorLine"].(float64))
 	ch := int(args["cursorCh"].(float64))
 
@@ -118,8 +122,10 @@ func AutocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//glog.Infof("gocode set lib-path %s", libPath)
 
 	// FIXME: 使用 gocode set lib-path 在多工作空间环境下肯定是有问题的，需要考虑其他实现方式
+	gocode := os.Getenv("GOPATH") + string(os.PathSeparator) + "bin" + string(os.PathSeparator) +
+		os.Getenv("GOOS") + "_" + os.Getenv("GOARCH") + string(os.PathSeparator) + "gocode"
 	argv := []string{"set", "lib-path", libPath}
-	cmd := exec.Command("gocode", argv...)
+	cmd := exec.Command(gocode, argv...)
 	cmd.Start()
 
 	//gocode 试验性质特性：自动构建
@@ -128,7 +134,7 @@ func AutocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	//cmd.Start()
 
 	argv = []string{"-f=json", "autocomplete", strconv.Itoa(offset)}
-	cmd = exec.Command("gocode", argv...)
+	cmd = exec.Command(gocode, argv...)
 
 	stdin, _ := cmd.StdinPipe()
 	stdin.Write([]byte(code))
@@ -194,8 +200,10 @@ func FindDeclarationHandler(w http.ResponseWriter, r *http.Request) {
 	// glog.Infof("offset [%d]", offset)
 
 	// TODO: 目前是调用 liteide_stub 工具来查找声明，后续需要重新实现
+	ide_stub := os.Getenv("GOPATH") + string(os.PathSeparator) + "bin" + string(os.PathSeparator) +
+		os.Getenv("GOOS") + "_" + os.Getenv("GOARCH") + string(os.PathSeparator) + "ide_stub"
 	argv := []string{"type", "-cursor", filename + ":" + strconv.Itoa(offset), "-def", "."}
-	cmd := exec.Command("liteide_stub", argv...)
+	cmd := exec.Command(ide_stub, argv...)
 	cmd.Dir = curDir
 
 	setCmdEnv(cmd, username)
@@ -274,8 +282,10 @@ func FindUsagesHandler(w http.ResponseWriter, r *http.Request) {
 	offset := getCursorOffset(code, line, ch)
 
 	// TODO: 目前是调用 liteide_stub 工具来查找使用，后续需要重新实现
+	ide_stub := os.Getenv("GOPATH") + string(os.PathSeparator) + "bin" + string(os.PathSeparator) +
+		os.Getenv("GOOS") + "_" + os.Getenv("GOARCH") + string(os.PathSeparator) + "ide_stub"
 	argv := []string{"type", "-cursor", filename + ":" + strconv.Itoa(offset), "-use", "."}
-	cmd := exec.Command("liteide_stub", argv...)
+	cmd := exec.Command(ide_stub, argv...)
 	cmd.Dir = curDir
 
 	setCmdEnv(cmd, username)
