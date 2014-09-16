@@ -24,7 +24,7 @@ import (
 func init() {
 	// 默认启动参数
 	flag.Set("logtostderr", "true")
-	flag.Set("v", "1")
+	flag.Set("v", "3")
 	flag.Parse()
 
 	// 加载事件处理
@@ -71,6 +71,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, model)
 }
 
+// 主程序入口.
 func main() {
 	runtime.GOMAXPROCS(conf.Wide.MaxProcs)
 

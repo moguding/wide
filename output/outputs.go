@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/b3log/wide/conf"
 	"github.com/b3log/wide/user"
@@ -19,16 +20,22 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var outputWS = map[string]*websocket.Conn{}
+// 输出通道.
+// <sid, *util.WSChannel>
+var outputWS = map[string]*util.WSChannel{}
 
+// 建立输出通道.
 func WSHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := user.Session.Get(r, "wide-session")
 	sid := session.Values["id"].(string)
 
-	outputWS[sid], _ = websocket.Upgrade(w, r, nil, 1024, 1024)
+	conn, _ := websocket.Upgrade(w, r, nil, 1024, 1024)
+	wsChan := util.WSChannel{Sid: sid, Conn: conn, Request: r, Time: time.Now()}
+
+	outputWS[sid] = &wsChan
 
 	ret := map[string]interface{}{"output": "Ouput initialized", "cmd": "init-output"}
-	outputWS[sid].WriteJSON(&ret)
+	wsChan.Conn.WriteJSON(&ret)
 
 	glog.V(4).Infof("Open a new [Output] with session [%s], %d", sid, len(outputWS))
 }
@@ -76,9 +83,18 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 
 	reader := io.MultiReader(stdout, stderr)
 
-	cmd.Start()
+	if err := cmd.Start(); nil != err {
+		glog.Error(err)
+		data["succ"] = false
+
+		return
+	}
+
+	// 添加到用户进程集中
+	processes.add(sid, cmd.Process)
 
 	channelRet := map[string]interface{}{}
+	channelRet["pid"] = cmd.Process.Pid
 
 	go func(runningId int) {
 		glog.V(3).Infof("Session [%s] is running [id=%d, file=%s]", sid, runningId, filePath)
@@ -88,19 +104,41 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 			count, err := reader.Read(buf)
 
 			if nil != err || 0 == count {
+				// 从用户进程集中移除这个执行完毕的进程
+				processes.remove(sid, cmd.Process)
+
 				glog.V(3).Infof("Session [%s] 's running [id=%d, file=%s] has done", sid, runningId, filePath)
 
-				break
-			} else {
-				channelRet["output"] = string(buf[:count])
-				channelRet["cmd"] = "run"
-
 				if nil != outputWS[sid] {
-					err := outputWS[sid].WriteJSON(&channelRet)
+					wsChannel := outputWS[sid]
+
+					channelRet["cmd"] = "run-done"
+					channelRet["output"] = string(buf[:count])
+					err := wsChannel.Conn.WriteJSON(&channelRet)
 					if nil != err {
 						glog.Error(err)
 						break
 					}
+
+					// 更新通道最近使用时间
+					wsChannel.Time = time.Now()
+				}
+
+				break
+			} else {
+				if nil != outputWS[sid] {
+					wsChannel := outputWS[sid]
+
+					channelRet["cmd"] = "run"
+					channelRet["output"] = string(buf[:count])
+					err := wsChannel.Conn.WriteJSON(&channelRet)
+					if nil != err {
+						glog.Error(err)
+						break
+					}
+
+					// 更新通道最近使用时间
+					wsChannel.Time = time.Now()
 				}
 			}
 		}
@@ -194,7 +232,12 @@ func BuildHandler(w http.ResponseWriter, r *http.Request) {
 	if data["succ"].(bool) {
 		reader := io.MultiReader(stdout, stderr)
 
-		cmd.Start()
+		if err := cmd.Start(); nil != err {
+			glog.Error(err)
+			data["succ"] = false
+
+			return
+		}
 
 		go func(runningId int) {
 			glog.V(3).Infof("Session [%s] is building [id=%d, file=%s]", sid, runningId, filePath)
@@ -250,10 +293,14 @@ func BuildHandler(w http.ResponseWriter, r *http.Request) {
 			if nil != outputWS[sid] {
 				glog.V(3).Infof("Session [%s] 's build [id=%d, file=%s] has done", sid, runningId, filePath)
 
-				err := outputWS[sid].WriteJSON(&channelRet)
+				wsChannel := outputWS[sid]
+				err := wsChannel.Conn.WriteJSON(&channelRet)
 				if nil != err {
 					glog.Error(err)
 				}
+
+				// 更新通道最近使用时间
+				wsChannel.Time = time.Now()
 			}
 
 		}(rand.Int())
@@ -371,10 +418,14 @@ func GoInstallHandler(w http.ResponseWriter, r *http.Request) {
 			if nil != outputWS[sid] {
 				glog.V(3).Infof("Session [%s] 's running [go install] [id=%d, dir=%s] has done", sid, runningId, curDir)
 
-				err := outputWS[sid].WriteJSON(&channelRet)
+				wsChannel := outputWS[sid]
+				err := wsChannel.Conn.WriteJSON(&channelRet)
 				if nil != err {
 					glog.Error(err)
 				}
+
+				// 更新通道最近使用时间
+				wsChannel.Time = time.Now()
 			}
 
 		}(rand.Int())
@@ -447,11 +498,16 @@ func GoGetHandler(w http.ResponseWriter, r *http.Request) {
 				channelRet["cmd"] = "go get"
 
 				if nil != outputWS[sid] {
-					err := outputWS[sid].WriteJSON(&channelRet)
+					wsChannel := outputWS[sid]
+
+					err := wsChannel.Conn.WriteJSON(&channelRet)
 					if nil != err {
 						glog.Error(err)
 						break
 					}
+
+					// 更新通道最近使用时间
+					wsChannel.Time = time.Now()
 				}
 			}
 		}

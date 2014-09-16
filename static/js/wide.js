@@ -11,8 +11,29 @@ outputWS.onmessage = function(e) {
         goLintFound = [];
     }
 
-    if ('run' === data.cmd) {
+    if ('run' === data.nextCmd) {
+        var request = {
+            executable: data.executable
+        };
+
+        $.ajax({
+            type: 'POST',
+            url: '/run',
+            data: JSON.stringify(request),
+            dataType: "json",
+            beforeSend: function(data) {
+                $('#output').text('');
+            },
+            success: function(data) {
+
+            }
+        });
+    }
+
+    if ('run' === data.cmd) { // 正在运行
         $('#output').text($('#output').text() + data.output);
+    } else if ('run-done' === data.cmd) { // 运行结束
+        // TODO: 运行结束后修改 [构建&运行] 图标状态为可用状态
     } else if ('build' === data.cmd || 'go install' === data.cmd) {
         $('#output').text(data.output);
 
@@ -24,33 +45,14 @@ outputWS.onmessage = function(e) {
                     to: CodeMirror.Pos(lint.lineNo, 0),
                     message: lint.msg, severity: lint.severity});
             }
+
+            // TODO: 修改 [构建&运行] 图标状态为可用状态
         }
 
         // 触发一次 gutter lint
         CodeMirror.signal(wide.curEditor, "change", wide.curEditor);
     } else if ('go get' === data.cmd || 'go install' === data.cmd) {
         $('#output').text($('#output').text() + data.output);
-    }
-
-    if ('build' === data.cmd) {
-        if ('run' === data.nextCmd) {
-            var request = {
-                executable: data.executable
-            };
-
-            $.ajax({
-                type: 'POST',
-                url: '/run',
-                data: JSON.stringify(request),
-                dataType: "json",
-                beforeSend: function(data) {
-                    $('#output').text('');
-                },
-                success: function(data) {
-
-                }
-            });
-        }
     }
 };
 outputWS.onclose = function(e) {
@@ -68,10 +70,17 @@ var wide = {
         var mainH = $(window).height() - $(".menu").height() - $(".footer").height() - 2;
         $(".content, .ztree").height(mainH);
 
-        $(".edit-panel").height(mainH - $(".output").height());
+        $(".edit-panel").height(mainH - $(".bottom-window-group").height());
+    },
+    _initBottomWindowGroup: function() {
+        new Tabs({
+            id: ".bottom-window-group"
+        });
     },
     init: function() {
         this._initLayout();
+        
+        this._initBottomWindowGroup();
 
         $("body").bind("mousedown", function(event) {
             if (!(event.target.id === "dirRMenu" || $(event.target).closest("#dirRMenu").length > 0)) {
@@ -116,11 +125,14 @@ var wide = {
     exit: function() {
         // TODO: exit
     },
+    // 构建 & 运行.
     run: function() {
         var request = {
             file: $(".edit-header .current span:eq(0)").attr("title"),
             code: wide.curEditor.getValue()
         };
+
+        // TODO: 修改 [构建&运行] 图标状态为不可用状态
 
         $.ajax({
             type: 'POST',
