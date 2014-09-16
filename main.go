@@ -10,8 +10,10 @@ import (
 
 	"github.com/b3log/wide/conf"
 	"github.com/b3log/wide/editor"
+	"github.com/b3log/wide/event"
 	"github.com/b3log/wide/file"
 	"github.com/b3log/wide/i18n"
+	"github.com/b3log/wide/notification"
 	"github.com/b3log/wide/output"
 	"github.com/b3log/wide/shell"
 	"github.com/b3log/wide/user"
@@ -20,19 +22,26 @@ import (
 
 // Wide 中唯一一个 init 函数.
 func init() {
+	// 默认启动参数
 	flag.Set("logtostderr", "true")
 	flag.Set("v", "1")
+	flag.Parse()
 
+	// 加载事件处理
+	event.Load()
+
+	// 加载配置
 	conf.Load()
 
-	flag.Parse()
+	// 定时检查 Wide 运行环境
+	conf.CheckEnv()
 }
 
 // Wide 首页.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	i18n.Load()
 
-	model := map[string]interface{}{"Wide": conf.Wide, "i18n": i18n.GetLangs(r), "locale": i18n.GetLocale(r)}
+	model := map[string]interface{}{"Wide": conf.Wide, "i18n": i18n.GetAll(r), "locale": i18n.GetLocale(r)}
 
 	session, _ := user.Session.Get(r, "wide-session")
 
@@ -102,6 +111,9 @@ func main() {
 	// Shell
 	http.HandleFunc("/shell/ws", shell.WSHandler)
 	http.HandleFunc("/shell", shell.IndexHandler)
+
+	// 通知
+	http.HandleFunc("/notification/ws", notification.WSHandler)
 
 	// 用户
 	http.HandleFunc("/user/new", user.AddUser)
