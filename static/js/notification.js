@@ -1,4 +1,4 @@
-var notificationWS = new WebSocket(config.channel.shell + '/notification/ws');
+var notificationWS = new WebSocket(config.channel.shell + '/notification/ws?sid=' + config.wideSessionId);
 notificationWS.onopen = function() {
     console.log('[notification onopen] connected');
 };
@@ -6,7 +6,7 @@ notificationWS.onmessage = function(e) {
     console.log('[notification onmessage]' + e.data);
     var data = JSON.parse(e.data);
     if ('init-notification' !== data.cmd) {
-        $('#notification').val(data.output);
+        $('.bottom-window-group .notification').val(data.output);
     }
 };
 notificationWS.onclose = function(e) {

@@ -40,28 +40,36 @@ func init() {
 // Wide 首页.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	// 创建一个 Wide 会话
-	wideSession := user.NewSession()
+	wideSession := user.WideSessions.New()
 
 	i18n.Load()
 
 	model := map[string]interface{}{"conf": conf.Wide, "i18n": i18n.GetAll(r), "locale": i18n.GetLocale(r),
 		"session": wideSession}
 
-	httpSession, _ := user.Session.Get(r, "wide-session")
+	httpSession, _ := user.HTTPSession.Get(r, "wide-session")
 
+	httpSessionId := httpSession.Values["id"].(string)
+	// TODO: 写死以 admin 作为用户登录
+	username := conf.Wide.Users[0].Name
 	if httpSession.IsNew {
-		// TODO: 写死以 admin 作为用户登录
-		name := conf.Wide.Users[0].Name
 
-		httpSession.Values["username"] = name
-		httpSession.Values["id"] = strconv.Itoa(rand.Int())
+		httpSession.Values["username"] = username
+		httpSessionId = strconv.Itoa(rand.Int())
+		httpSession.Values["id"] = httpSessionId
 		// 一天过期
 		httpSession.Options.MaxAge = 60 * 60 * 24
 
-		glog.Infof("Created a session [%s] for user [%s]", httpSession.Values["id"].(string), name)
+		glog.Infof("Created a HTTP session [%s] for user [%s]", httpSession.Values["id"].(string), username)
 	}
 
 	httpSession.Save(r, w)
+
+	// Wide 会话关联 HTTP 会话
+	wideSession.HTTPSessionId = httpSession.Values["id"].(string)
+
+	wideSessions := user.WideSessions.GetByHTTPSid(httpSessionId)
+	glog.V(3).Infof("User [%s] has [%d] sessions", username, len(wideSessions))
 
 	t, err := template.ParseFiles("view/index.html")
 
@@ -75,6 +83,11 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, model)
 }
 
+// favicon.ico 请求处理.
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: favicon.ico 请求处理.
+}
+
 // 主程序入口.
 func main() {
 	runtime.GOMAXPROCS(conf.Wide.MaxProcs)
@@ -83,6 +96,7 @@ func main() {
 
 	// 静态资源
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/favicon.ico", faviconHandler)
 
 	// 库资源
 	http.Handle("/data/", http.StripPrefix("/data/", http.FileServer(http.Dir("data"))))
