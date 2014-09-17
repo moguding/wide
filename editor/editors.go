@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/b3log/wide/conf"
-	"github.com/b3log/wide/user"
+	"github.com/b3log/wide/session"
 	"github.com/b3log/wide/util"
 	"github.com/golang/glog"
 	"github.com/gorilla/websocket"
@@ -30,7 +30,7 @@ type snippet struct {
 
 // 建立编辑器通道.
 func WSHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := user.HTTPSession.Get(r, "wide-session")
+	session, _ := session.HTTPSession.Get(r, "wide-session")
 	sid := session.Values["id"].(string)
 
 	editorWS[sid], _ = websocket.Upgrade(w, r, nil, 1024, 1024)
@@ -99,7 +99,7 @@ func AutocompleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := user.HTTPSession.Get(r, "wide-session")
+	session, _ := session.HTTPSession.Get(r, "wide-session")
 	username := session.Values["username"].(string)
 
 	path := args["path"].(string)
@@ -142,16 +142,10 @@ func AutocompleteHandler(w http.ResponseWriter, r *http.Request) {
 	// FIXME: 使用 gocode set lib-path 在多工作空间环境下肯定是有问题的，需要考虑其他实现方式
 	gocode := conf.Wide.GetGocode()
 	argv := []string{"set", "lib-path", libPath}
-	cmd := exec.Command(gocode, argv...)
-	cmd.Start()
-
-	//gocode 试验性质特性：自动构建
-	//argv = []string{"set", "autobuild", "true"}
-	//cmd := exec.Command("gocode", argv...)
-	//cmd.Start()
+	exec.Command(gocode, argv...).Run()
 
 	argv = []string{"-f=json", "autocomplete", strconv.Itoa(offset)}
-	cmd = exec.Command(gocode, argv...)
+	cmd := exec.Command(gocode, argv...)
 
 	stdin, _ := cmd.StdinPipe()
 	stdin.Write([]byte(code))
@@ -174,7 +168,7 @@ func FindDeclarationHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"succ": true}
 	defer util.RetJSON(w, r, data)
 
-	session, _ := user.HTTPSession.Get(r, "wide-session")
+	session, _ := session.HTTPSession.Get(r, "wide-session")
 	username := session.Values["username"].(string)
 
 	decoder := json.NewDecoder(r.Body)
@@ -255,7 +249,7 @@ func FindUsagesHandler(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{"succ": true}
 	defer util.RetJSON(w, r, data)
 
-	session, _ := user.HTTPSession.Get(r, "wide-session")
+	session, _ := session.HTTPSession.Get(r, "wide-session")
 	username := session.Values["username"].(string)
 
 	decoder := json.NewDecoder(r.Body)
